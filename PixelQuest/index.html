@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PixelQuest - 16-Bit Retro Platformer</title>
+  
+  <!-- Retro Pixel Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  
+  <!-- Game Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <main class="pq-app-container">
+    <div class="pq-cabinet" id="gameCabinet">
+      
+      <!-- Responsive 16:9 Canvas Viewport -->
+      <div class="pq-canvas-wrapper" id="canvasWrapper">
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+        <!-- Retro CRT Scanline & Phosphor Vignette Filter -->
+        <div class="pq-crt-overlay" id="crtOverlay"></div>
+
+        <!-- 1. Start Screen Overlay (MENU State) -->
+        <div class="pq-screen-overlay" id="startScreen">
+          <header class="pq-title-container">
+            <div class="pq-logo-badge">★ RETRO ARCADE EDITION ★</div>
+            <h1 class="pq-main-title">PIXELQUEST</h1>
+            <p class="pq-subtitle">A 2D 16-BIT PLATFORMING ADVENTURE</p>
+            <div class="pq-menu-stats-row">
+              <span class="pq-menu-highscore" id="menuHighScore">🏆 HIGH SCORE: 000000</span>
+              <span class="pq-menu-coins-badge" id="menuTotalCoins">🪙 TOTAL COINS: 000</span>
+            </div>
+          </header>
+
+          <nav class="pq-menu-button-group" aria-label="Game Menu">
+            <button type="button" class="pq-btn pq-btn-primary" id="btnPlay">
+              <span>▶</span> PLAY GAME
+            </button>
+            <button type="button" class="pq-btn" id="btnLevelSelect">
+              <span>🗺️</span> LEVEL SELECT
+            </button>
+            <button type="button" class="pq-btn" id="btnHowToPlay">
+              <span>🕹️</span> HOW TO PLAY
+            </button>
+            <button type="button" class="pq-btn" id="btnSettings">
+              <span>⚙️</span> SETTINGS
+            </button>
+            <button type="button" class="pq-btn" id="btnAbout">
+              <span>ℹ️</span> ABOUT
+            </button>
+          </nav>
+
+          <footer class="pq-menu-footer">
+            <span class="pq-footer-blink">[ PRESS SPACE OR SELECT PLAY GAME ]</span>
+          </footer>
+        </div>
+
+        <!-- 2. Heads-Up Display (PLAYING State) -->
+        <div class="pq-hud" id="hudScreen" style="display: none;">
+          <div class="pq-hud-group">
+            <span class="pq-hud-item pq-hud-hearts-box" id="hudHearts">❤️❤️❤️</span>
+            <span class="pq-hud-item pq-hud-score-box">
+              <span class="pq-hud-label">SCORE:</span>
+              <span class="pq-hud-val" id="hudScore">000000</span>
+            </span>
+            <span class="pq-hud-item pq-hud-coins-box" id="hudCoins">
+              <span class="pq-coin-icon">🪙</span> <span id="hudCoinsVal">00</span>
+            </span>
+          </div>
+
+          <div class="pq-hud-group">
+            <span class="pq-hud-item pq-hud-stage-box" id="hudLevel">STAGE: 1-1</span>
+            <span class="pq-hud-item pq-hud-val" id="fpsCounter" style="display: none;">60 FPS</span>
+            <button type="button" class="pq-icon-btn" id="btnMuteHud" title="Mute/Unmute Audio">🔊</button>
+            <button type="button" class="pq-icon-btn pq-icon-btn-pause" id="btnPause" title="Pause Game">⏸</button>
+            <button type="button" class="pq-icon-btn pq-icon-btn-fullscreen" id="btnFullscreen" title="Enter Full Screen" aria-label="Enter Full Screen">⛶</button>
+          </div>
+        </div>
+
+        <!-- 3. On-Screen Touch Controls (Mobile & Touch Devices) -->
+        <div class="pq-touch-controls" id="touchControls" style="display: none;" aria-label="Mobile On-Screen Controls">
+          <div class="pq-touch-dpad">
+            <button type="button" class="pq-touch-btn pq-touch-btn-left" id="btnTouchLeft" aria-label="Move Left">◀</button>
+            <button type="button" class="pq-touch-btn pq-touch-btn-right" id="btnTouchRight" aria-label="Move Right">▶</button>
+          </div>
+          <div class="pq-touch-action">
+            <button type="button" class="pq-touch-btn pq-touch-btn-jump" id="btnTouchJump" aria-label="Jump">JUMP ⬆</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Cabinet Bezel Info Footer -->
+      <footer class="pq-cabinet-footer">
+        <span>FRAMEWORK: <span class="pq-cabinet-badge">VANILLA JS + HTML5 CANVAS</span></span>
+        <span>CONTROLS: <span class="pq-cabinet-badge">WASD / ARROWS / SPACE</span></span>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       MODAL DIALOGS (Native <dialog> with Accessible Modern Web Standards)
+       ======================================================================== -->
+
+  <!-- How to Play Dialog -->
+  <dialog id="howToPlayDialog" closedby="any" aria-labelledby="howToPlayTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="howToPlayTitle">HOW TO PLAY</h2>
+      <button type="button" class="pq-close-btn" data-close-dialog="howToPlayDialog" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="pq-dialog-body">
+      <div class="pq-instructions-grid">
+        <section class="pq-guide-card">
+          <h4>🕹️ CONTROLS</h4>
+          <p><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> : Move Left / Right</p>
+          <p><kbd>SPACE</kbd> or <kbd>W</kbd> / <kbd>↑</kbd> : Jump (Hold for higher jump)</p>
+          <p><kbd>P</kbd> or <kbd>ESC</kbd> : Pause / Resume Game</p>
+          <p><strong>Mobile:</strong> Use on-screen D-Pad and Jump button.</p>
+        </section>
+
+        <section class="pq-guide-card">
+          <h4>🎯 OBJECTIVES & SCORING</h4>
+          <p>• Collect <strong>Golden Coins</strong> (+10 pts) and secret <strong>Gems</strong> (+100 pts).</p>
+          <p>• Stomp walking <strong>Slimes</strong> & monsters from above (+50 pts)!</p>
+          <p>• Reach the mystical <strong>Cyan Portal</strong> at the end of each stage.</p>
+          <p>• Clear Stage 3 by defeating the <strong>Gargoyle Boss</strong>!</p>
+        </section>
+
+        <section class="pq-guide-card">
+          <h4>👾 ENEMIES & HAZARDS</h4>
+          <p>• <strong>Slime:</strong> Patrolling creature; squishable from above.</p>
+          <p>• <strong>Bat / Flyer:</strong> Sweeps in sinusoidal flight paths.</p>
+          <p>• <strong>Monster / Orc:</strong> Tough guard patrolling fortress grounds.</p>
+          <p>• <strong>Spikes & Lava:</strong> Deadly floor hazards that cost 1 life.</p>
+          <p>• <strong>Moving & Falling Platforms:</strong> Time your jumps carefully!</p>
+        </section>
+
+        <section class="pq-guide-card">
+          <h4>💡 PRO MECHANICS</h4>
+          <p>• <strong>Coyote Time:</strong> Jump up to 100ms after walking off an edge.</p>
+          <p>• <strong>Jump Buffer:</strong> Press jump just before landing to instantly leap.</p>
+          <p>• <strong>Dynamic Jump Height:</strong> Release jump early for a short hop.</p>
+        </section>
+      </div>
+    </div>
+    <div class="pq-dialog-footer">
+      <button type="button" class="pq-btn" data-close-dialog="howToPlayDialog">GOT IT!</button>
+    </div>
+  </dialog>
+
+  <!-- Settings Dialog -->
+  <dialog id="settingsDialog" closedby="any" aria-labelledby="settingsTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="settingsTitle">GAME SETTINGS</h2>
+      <button type="button" class="pq-close-btn" data-close-dialog="settingsDialog" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="pq-dialog-body">
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>Sound Effects (SFX)</span>
+          <span class="pq-setting-desc">Jump, coins, hits & stomps</span>
+        </div>
+        <div class="pq-setting-control">
+          <input type="range" id="sfxSlider" min="0" max="100" value="80" aria-label="SFX Volume">
+          <label class="pq-toggle-label">
+            <input type="checkbox" id="sfxToggle" checked aria-label="Toggle Sound Effects">
+            <span id="sfxToggleText">ON</span>
+          </label>
+          <input type="checkbox" id="sfxMute" style="display: none;" aria-hidden="true">
+        </div>
+      </div>
+
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>Background Music (BGM)</span>
+          <span class="pq-setting-desc">Procedural 16-bit chiptune soundtrack</span>
+        </div>
+        <div class="pq-setting-control">
+          <input type="range" id="musicSlider" min="0" max="100" value="50" aria-label="Music Volume">
+          <label class="pq-toggle-label">
+            <input type="checkbox" id="musicToggle" checked aria-label="Toggle Background Music">
+            <span id="musicToggleText">ON</span>
+          </label>
+          <input type="checkbox" id="musicMute" style="display: none;" aria-hidden="true">
+        </div>
+      </div>
+
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>CRT Scanlines</span>
+          <span class="pq-setting-desc">Authentic arcade monitor scanlines</span>
+        </div>
+        <div class="pq-setting-control">
+          <input type="checkbox" id="crtCheckbox" checked aria-label="Toggle CRT Scanlines">
+        </div>
+      </div>
+
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>Screen Shake</span>
+          <span class="pq-setting-desc">Camera shake on impacts & damage</span>
+        </div>
+        <div class="pq-setting-control">
+          <input type="checkbox" id="shakeCheckbox" checked aria-label="Toggle Screen Shake">
+        </div>
+      </div>
+
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>Show FPS</span>
+          <span class="pq-setting-desc">Display real-time frame rate in HUD</span>
+        </div>
+        <div class="pq-setting-control">
+          <input type="checkbox" id="fpsCheckbox" aria-label="Toggle FPS Counter">
+        </div>
+      </div>
+
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>Full Screen</span>
+          <span class="pq-setting-desc">Expand arcade display to full screen</span>
+        </div>
+        <div class="pq-setting-control">
+          <button type="button" class="pq-btn" id="btnFullscreenSettings" style="width: auto; padding: 8px 14px; font-size: 10px;">
+            <span class="pq-fs-icon">⛶</span> FULL SCREEN
+          </button>
+        </div>
+      </div>
+
+      <div class="pq-setting-row">
+        <div class="pq-setting-label">
+          <span>Restart Progress</span>
+          <span class="pq-setting-desc">Erase unlocked levels, coins & records</span>
+        </div>
+        <div class="pq-setting-control">
+          <button type="button" class="pq-btn pq-btn-danger" id="btnResetData">RESTART PROGRESS</button>
+        </div>
+      </div>
+    </div>
+    <div class="pq-dialog-footer">
+      <button type="button" class="pq-btn" data-close-dialog="settingsDialog">CLOSE</button>
+    </div>
+  </dialog>
+
+  <!-- Confirm Reset Progress Dialog -->
+  <dialog id="confirmResetDialog" closedby="any" aria-labelledby="confirmResetTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="confirmResetTitle" style="color: var(--pq-red);">⚠️ RESTART PROGRESS?</h2>
+      <button type="button" class="pq-close-btn" data-close-dialog="confirmResetDialog" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="pq-dialog-body" style="text-align: center;">
+      <p style="margin-bottom: 12px; color: #ff7675; font-size: 11px;">THIS ACTION CANNOT BE UNDONE!</p>
+      <p style="margin-bottom: 18px; font-size: 9px; line-height: 1.8;">
+        All unlocked levels, completed stages, lifetime coins, and high scores will be permanently reset to factory defaults.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; max-width: 320px; margin: 0 auto;">
+        <button type="button" class="pq-btn pq-btn-danger" id="btnConfirmReset">YES, RESET ALL</button>
+        <button type="button" class="pq-btn" data-close-dialog="confirmResetDialog">CANCEL</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- About Dialog -->
+  <dialog id="aboutDialog" closedby="any" aria-labelledby="aboutTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="aboutTitle">ABOUT PIXELQUEST</h2>
+      <button type="button" class="pq-close-btn" data-close-dialog="aboutDialog" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="pq-dialog-body">
+      <p style="margin-bottom: 12px; color: var(--pq-cyan);">👑 <strong>THE LORE OF PIXELIA</strong></p>
+      <p style="margin-bottom: 16px;">
+        Dark shadows have swept across the Kingdom of Pixelia. You are the legendary Pixel Knight, summoned to venture across perilous meadows, crystal caverns, and enchanted castles to recover the lost power gems!
+      </p>
+      
+      <p style="margin-bottom: 12px; color: var(--pq-gold);">⚡ <strong>PURE WEB CRAFTSMANSHIP</strong></p>
+      <p style="margin-bottom: 8px;">• <strong>HTML5 Canvas API</strong> - High performance 60 FPS pixel rendering</p>
+      <p style="margin-bottom: 8px;">• <strong>CSS3 Modern Standards</strong> - Responsive 16:9 arcade cabinet layout</p>
+      <p style="margin-bottom: 8px;">• <strong>Vanilla JavaScript</strong> - Modular ES5/ES6 architecture with finite state machine</p>
+      <p style="margin-bottom: 16px;">• <strong>Web Audio API</strong> - Procedural 8-bit retro sound synthesizer</p>
+
+      <p style="color: var(--pq-text-muted); font-size: 8px;">
+        Version 1.0.0 • No External Engines • 100% Client-Side
+      </p>
+    </div>
+    <div class="pq-dialog-footer">
+      <button type="button" class="pq-btn" data-close-dialog="aboutDialog">BACK TO MENU</button>
+    </div>
+  </dialog>
+
+  <!-- Pause Dialog (PAUSED State) -->
+  <dialog id="pauseDialog" closedby="closerequest" aria-labelledby="pauseTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="pauseTitle">⏸ PAUSED</h2>
+    </div>
+    <div class="pq-dialog-body" style="text-align: center;">
+      <p style="margin-bottom: 20px; font-size: 11px; color: var(--pq-cyan);">EXPEDITION SUSPENDED</p>
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 260px; margin: 0 auto;">
+        <button type="button" class="pq-btn pq-btn-primary" id="btnResume">▶ RESUME</button>
+        <button type="button" class="pq-btn" id="btnFullscreenPause"><span class="pq-fs-icon">⛶</span> FULL SCREEN</button>
+        <button type="button" class="pq-btn" id="btnRestartPause">🔄 RESTART LEVEL</button>
+        <button type="button" class="pq-btn" id="btnLevelSelectPause">🗺️ LEVEL SELECT</button>
+        <button type="button" class="pq-btn" id="btnMenuPause">🏠 MAIN MENU</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Game Over Dialog (GAME_OVER State) -->
+  <dialog id="gameOverDialog" closedby="none" aria-labelledby="gameOverTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="gameOverTitle" style="color: var(--pq-red);">☠️ GAME OVER</h2>
+    </div>
+    <div class="pq-dialog-body" style="text-align: center;">
+      <div class="pq-game-over-banner">
+        <div class="pq-skull-icon">💀</div>
+        <p class="pq-game-over-subtitle">THE KNIGHT HAS FALLEN!</p>
+      </div>
+
+      <div class="pq-score-breakdown-card" style="background: var(--pq-surface); border: 2px solid #3d1c1c; padding: 14px; margin: 16px auto; text-align: left; font-size: 9px; line-height: 2; max-width: 320px;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2d1818; padding-bottom: 4px;">
+          <span>STAGE REACHED:</span>
+          <strong id="gameOverLevel" style="color: var(--pq-cyan);">Whispering Woods</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2d1818; padding: 4px 0;">
+          <span>COINS COLLECTED:</span>
+          <strong id="gameOverCoins" style="color: var(--pq-gold);">🪙 00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2d1818; padding: 4px 0;">
+          <span>FINAL SCORE:</span>
+          <strong id="gameOverScore" style="color: var(--pq-gold);">000000</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-top: 6px; font-size: 10px;">
+          <span>BEST SCORE:</span>
+          <strong id="gameOverBest" style="color: #2ecc71;">000000</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 260px; margin: 0 auto;">
+        <button type="button" class="pq-btn pq-btn-primary" id="btnRetryGameOver">🔄 TRY AGAIN</button>
+        <button type="button" class="pq-btn" id="btnMenuGameOver">🏠 MAIN MENU</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Level Complete Dialog (LEVEL_COMPLETE State) -->
+  <dialog id="levelCompleteDialog" closedby="none" aria-labelledby="completeTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="completeTitle" style="color: var(--pq-green);">★ STAGE CLEAR! ★</h2>
+    </div>
+    <div class="pq-dialog-body" style="text-align: center;">
+      <!-- Victory Animation Container -->
+      <div class="pq-victory-banner">
+        <div class="pq-sunburst"></div>
+        <div class="pq-trophy" id="victoryTrophy">🏆</div>
+      </div>
+
+      <p id="completeStageSubtitle" style="margin-bottom: 14px; font-size: 11px; color: var(--pq-gold);">PORTAL UNLOCKED!</p>
+      
+      <!-- Detailed Score Breakdown -->
+      <div class="pq-score-breakdown-card" style="background: var(--pq-surface); border: 2px solid #272d42; padding: 14px; margin-bottom: 18px; text-align: left; font-size: 9px; line-height: 2;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1f2334; padding-bottom: 4px;">
+          <span>STAGE:</span>
+          <strong id="statStageName" style="color: var(--pq-cyan);">Whispering Woods</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1f2334; padding: 4px 0;">
+          <span>COINS COLLECTED:</span>
+          <strong id="statCoins" style="color: var(--pq-gold);">🪙 00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1f2334; padding: 4px 0;">
+          <span>LIVES BONUS (50x):</span>
+          <strong id="statHealthBonus" style="color: var(--pq-green);">+150 PTS</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1f2334; padding: 4px 0;">
+          <span>CLEAR BONUS:</span>
+          <strong id="statClearBonus" style="color: var(--pq-cyan);">+200 PTS</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-top: 6px; font-size: 11px;">
+          <span style="color: var(--pq-gold);">TOTAL SCORE:</span>
+          <strong id="statTotalScore" style="color: var(--pq-gold);">000000</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 260px; margin: 0 auto;">
+        <button type="button" class="pq-btn pq-btn-primary" id="btnNextLevel">NEXT LEVEL ⏩</button>
+        <button type="button" class="pq-btn" id="btnSelectFromComplete">🗺️ LEVEL SELECT</button>
+        <button type="button" class="pq-btn" id="btnMenuComplete">🏠 MAIN MENU</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Level Select Dialog -->
+  <dialog id="levelSelectDialog" closedby="any" aria-labelledby="levelSelectTitle">
+    <div class="pq-dialog-header">
+      <h2 class="pq-dialog-title" id="levelSelectTitle">SELECT STAGE</h2>
+      <button type="button" class="pq-close-btn" data-close-dialog="levelSelectDialog" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="pq-dialog-body">
+      <p style="margin-bottom: 14px; color: var(--pq-text-muted); font-size: 9px; text-align: center;">
+        CLEAR STAGES TO UNLOCK NEW EXPEDITIONS
+      </p>
+      <div class="pq-level-grid">
+        <!-- Level 1 Card -->
+        <article class="pq-level-card" id="lvlCard1">
+          <div class="pq-level-badge">STAGE 1</div>
+          <div class="pq-level-preview pq-preview-forest">🌲</div>
+          <h4 class="pq-level-name">WHISPERING WOODS</h4>
+          <p class="pq-level-desc">Green forest meadows, basic slimes & easy jumping.</p>
+          <div class="pq-level-meta">
+            <span class="pq-level-difficulty diff-easy">NORMAL</span>
+          </div>
+          <button type="button" class="pq-btn pq-btn-primary pq-btn-play-level" data-level-index="0">PLAY STAGE</button>
+        </article>
+
+        <!-- Level 2 Card -->
+        <article class="pq-level-card" id="lvlCard2">
+          <div class="pq-level-badge">STAGE 2</div>
+          <div class="pq-level-preview pq-preview-lava">🔥</div>
+          <h4 class="pq-level-name">LAVA CAVES</h4>
+          <p class="pq-level-desc">Perilous magma pits, moving platforms & swooping bats.</p>
+          <div class="pq-level-meta">
+            <span class="pq-level-difficulty diff-hard">HARD</span>
+          </div>
+          <button type="button" class="pq-btn pq-btn-primary pq-btn-play-level" data-level-index="1">PLAY STAGE</button>
+        </article>
+
+        <!-- Level 3 Card -->
+        <article class="pq-level-card" id="lvlCard3">
+          <div class="pq-level-badge">STAGE 3</div>
+          <div class="pq-level-preview pq-preview-castle">👑</div>
+          <h4 class="pq-level-name">DARK CASTLE</h4>
+          <p class="pq-level-desc">Gothic fortress, sawblade traps & final boss battle!</p>
+          <div class="pq-level-meta">
+            <span class="pq-level-difficulty diff-boss">BOSS</span>
+          </div>
+          <button type="button" class="pq-btn pq-btn-primary pq-btn-play-level" data-level-index="2">PLAY STAGE</button>
+        </article>
+      </div>
+    </div>
+    <div class="pq-dialog-footer">
+      <button type="button" class="pq-btn" data-close-dialog="levelSelectDialog">BACK TO MENU</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================
+       GAME ENGINE SCRIPTS (Loaded in modular dependency order)
+       ======================================================================== -->
+  <script src="js/storage.js"></script>
+  <script src="js/collision.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/enemies.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
+
