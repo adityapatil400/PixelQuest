@@ -111,7 +111,7 @@ Follow these steps to run PixelQuest locally.
 ### 1. Clone the Repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/adityapatil400/PixelQuest.git
 ```
 
 ### 2. Navigate to the Project
